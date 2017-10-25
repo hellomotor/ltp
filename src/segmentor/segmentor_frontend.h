@@ -7,109 +7,124 @@
 #include "segmentor/instance.h"
 #include "segmentor/options.h"
 #include "segmentor/decoder.h"
+#include <boost/atomic.hpp>
 
 namespace ltp {
-namespace segmentor {
+    namespace segmentor {
 
-class SegmentorFrontend: public Segmentor, public framework::Frontend {
-protected:
-  SegmentationViterbiDecoderWithMarginal decoder;     //! The decoder.
-  framework::ViterbiFeatureContext ctx;  //! The decode context
-  framework::ViterbiScoreMatrix scm;     //! The score matrix
-  std::vector<const Model::lexicon_t*> lexicons;
+        class SegmentorFrontend : public Segmentor, public framework::Frontend {
+        protected:
+            SegmentationViterbiDecoderWithMarginal decoder;     //! The decoder.
+            framework::ViterbiFeatureContext ctx;  //! The decode context
+            framework::ViterbiScoreMatrix scm;     //! The score matrix
+            std::vector<const Model::lexicon_t *> lexicons;
 
-  TrainOptions train_opt;
-  TestOptions  test_opt;
-  DumpOptions  dump_opt;
+            TrainOptions train_opt;
+            TestOptions test_opt;
+            DumpOptions dump_opt;
 
-  size_t timestamp;
+            size_t timestamp;
 
-protected:
-  struct Segmentation {
-    bool is_partial;
-    std::vector<std::string> words;
-    PartialSegmentationConstrain con;
-  };
+        protected:
+            struct Segmentation {
+                bool is_partial;
+                std::vector<std::string> words;
+                PartialSegmentationConstrain con;
+            };
 
-  std::vector<Instance *> train_data_input;     //! The training data input.
-  std::vector<Segmentation> train_data_output;  //! The training data output.
+            std::vector<Instance *> train_data_input;     //! The training data input.
+            std::vector<Segmentation> train_data_output;  //! The training data output.
 
-public:
-  SegmentorFrontend(const std::string& reference_file,
-      const std::string& holdout_file,
-      const std::string& model_name,
-      const std::string& algorithm,
-      const size_t& max_iter,
-      const size_t& rare_feature_threshold,
-      bool dump_model_details);
+        public:
+            SegmentorFrontend(const std::string &reference_file,
+                              const std::string &holdout_file,
+                              const std::string &model_name,
+                              const std::string &algorithm,
+                              const size_t &max_iter,
+                              const size_t &rare_feature_threshold,
+                              bool dump_model_details);
 
-  SegmentorFrontend(const std::string& input_file,
-      const std::string& model_file,
-      bool evaluate,
-      bool sequence_prob = false,
-      bool marginal_prob = false);
+            SegmentorFrontend(const std::string &input_file,
+                              const std::string &model_file,
+                              bool evaluate,
+                              bool sequence_prob = false,
+                              bool marginal_prob = false);
 
-  SegmentorFrontend(const std::string& model_file);
+            SegmentorFrontend(const std::string &model_file);
 
-  ~SegmentorFrontend();
+            ~SegmentorFrontend();
 
-  void train(void);
-  void test(void);
-  void dump(void);
+            void train(void);
 
-protected:
+            void test(void);
 
-  virtual void extract_features(const Instance& inst, bool create);
-  virtual void extract_features(const Instance& inst);
-  virtual void calculate_scores(const Instance& inst, bool avg);
-  virtual void collect_features(const Instance& inst);
-  virtual void update(const Instance& inst, math::SparseVec& updated_features);
+            void dump(void);
 
-  /**
-   * Read instances from file and store them in train_dat
-   *
-   *  @param[in]  file_name   the filename
-   *  @return     bool        true on success, otherwise false
-   */
-  bool read_instance( const char * file_name );
+        protected:
 
+            void process_instance(const std::vector<std::string> &,
+                                                     uint32_t from,
+                                                     uint32_t to,
+                                                     Preprocessor &preprocessor,
+                                                     boost::atomic_int &nr_lines,
+                                                     boost::atomic_int &nr_fully_segmented,
+                                                     boost::atomic_int &nr_partially_segmented);
 
-  /**
-   * Build configuration before model training. Three things are done
-   * during the building configuration pharse:
-   *
-   *  1. Build tag sets;
-   *  2. Collect internal word map;
-   *  3. Record word frequency.
-   */
-  void build_configuration(void);
+            virtual void extract_features(const Instance &inst, bool create);
 
+            virtual void extract_features(const Instance &inst);
 
-  /**
-   * Build feature space.
-   */
-  void build_feature_space(void);
+            virtual void calculate_scores(const Instance &inst, bool avg);
+
+            virtual void collect_features(const Instance &inst);
+
+            virtual void update(const Instance &inst, math::SparseVec &updated_features);
+
+            /**
+             * Read instances from file and store them in train_dat
+             *
+             *  @param[in]  file_name   the filename
+             *  @return     bool        true on success, otherwise false
+             */
+            bool read_instance(const char *file_name);
 
 
-  /**
-   * The main evaluating process.
-   *
-   *  @param[out]  p   The precise
-   *  @param[out]  r   The recall
-   *  @param[out]  f   The F-score
-   */
-  void evaluate(double &p, double &r, double &f);
+            /**
+             * Build configuration before model training. Three things are done
+             * during the building configuration pharse:
+             *
+             *  1. Build tag sets;
+             *  2. Collect internal word map;
+             *  3. Record word frequency.
+             */
+            void build_configuration(void);
 
-  virtual size_t get_timestamp() const;
 
-  void increase_timestamp();
+            /**
+             * Build feature space.
+             */
+            void build_feature_space(void);
 
-  virtual void setup_lexicons();
 
-  virtual void clear_context();
-};
+            /**
+             * The main evaluating process.
+             *
+             *  @param[out]  p   The precise
+             *  @param[out]  r   The recall
+             *  @param[out]  f   The F-score
+             */
+            void evaluate(double &p, double &r, double &f);
 
-} //  namespace segmentor
+            virtual size_t get_timestamp() const;
+
+            void increase_timestamp();
+
+            virtual void setup_lexicons();
+
+            virtual void clear_context();
+        };
+
+    } //  namespace segmentor
 } //  namespace ltp
 
 #endif  //  end for __LTP_SEGMENTOR_SEGMENTOR_FRONTEND_H__

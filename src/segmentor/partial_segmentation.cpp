@@ -1,6 +1,7 @@
 #include "segmentor/partial_segmentation.h"
 #include "segmentor/settings.h"
 #include "utils/strutils.hpp"
+#include <boost/algorithm/string.hpp>
 
 namespace ltp {
 namespace segmentor {
@@ -16,7 +17,8 @@ int PartialSegmentationUtils::split_by_partial_tag(
 
   if (offset1 == std::string::npos && offset2 == std::string::npos) {
     // 0 representing no partial tags. split with the original tags.
-    words = split(line);
+    boost::algorithm::split(words, line, boost::algorithm::is_any_of("\t\n\r "));
+
     return 0;
   }
 

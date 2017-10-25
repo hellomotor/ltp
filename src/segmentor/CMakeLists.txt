@@ -2,6 +2,10 @@ include_directories ( ${SOURCE_DIR} ${THIRDPARTY_DIR}/boost/include )
 
 set (segment_VERSION "0.2.0")
 
+find_package(Boost COMPONENTS system thread REQUIRED)
+
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+
 set (segment_SRC
     settings.h
     special_tokens.h
@@ -59,7 +63,7 @@ add_executable (otcws otcws.cpp
     io.h
     io.cpp
     ${segment_SRC})
-target_link_libraries (otcws boost_regex_static_lib boost_program_options_static_lib)
+target_link_libraries (otcws boost_regex_static_lib ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} boost_program_options_static_lib)
 set_target_properties (otcws PROPERTIES  OUTPUT_NAME otcws
     RUNTIME_OUTPUT_DIRECTORY ${TOOLS_DIR}/train/)
 
